@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #1A1A1A;
+  --bg-elev: #212121;
+  --bg-card: #1F1F1F;
+  --bg-input: #181818;
+  --border: rgba(245, 240, 232, 0.08);
+  --border-strong: rgba(245, 240, 232, 0.14);
+  --text: #F5F0E8;
+  --text-mute: rgba(245, 240, 232, 0.62);
+  --text-faint: rgba(245, 240, 232, 0.40);
+  --gold: #D4A574;
+  --gold-dim: rgba(212, 165, 116, 0.18);
+  --gold-faint: rgba(212, 165, 116, 0.08);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-elev: var(--bg-elev);
+  --color-bg-card: var(--bg-card);
+  --color-bg-input: var(--bg-input);
+  --color-mj-text: var(--text);
+  --color-mj-mute: var(--text-mute);
+  --color-mj-faint: var(--text-faint);
+  --color-gold: var(--gold);
+  --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-serif: 'Source Serif 4', 'Noto Serif SC', Georgia, serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(245, 240, 232, 0.12) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(245, 240, 232, 0.12);
+  border-radius: 3px;
+}
+
+/* Blink animation for editor cursor */
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+/* Reveal animation for AI insight */
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Shimmer animation */
+@keyframes shimmer {
+  0% { opacity: 0.4; }
+  50% { opacity: 1; }
+  100% { opacity: 0.4; }
+}
