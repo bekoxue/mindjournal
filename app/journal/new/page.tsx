@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase, createJournal, updateJournal, updateJournalInsight, getTodayJournal, getJournal } from '@/lib/supabase'
 
@@ -26,7 +26,7 @@ function CloseIcon() {
   )
 }
 
-export default function NewJournalPage() {
+function NewJournalPageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const editId = searchParams.get('edit')
@@ -229,5 +229,13 @@ export default function NewJournalPage() {
         </span>
       </div>
     </div>
+  )
+}
+
+export default function NewJournalPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#161616', display: 'grid', placeItems: 'center' }}><div style={{ color: 'var(--text-faint)', font: '400 14px/1 var(--font-ui)' }}>加载中…</div></div>}>
+      <NewJournalPageInner />
+    </Suspense>
   )
 }
