@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { supabase, getJournal, deleteJournal } from '@/lib/supabase'
 import type { Journal } from '@/lib/types'
 import { TopNav } from '@/components/TopNav'
+import { getAvatarBg, getInitials } from '@/lib/avatar'
 
 function BackIcon() {
   return (
@@ -74,6 +75,7 @@ export default function JournalDetailPage() {
   const [journal, setJournal] = useState<Journal | null>(null)
   const [loading, setLoading] = useState(true)
   const [initials, setInitials] = useState('MJ')
+  const [avatarBg, setAvatarBg] = useState(getAvatarBg(0))
   const [expanded, setExpanded] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -84,7 +86,9 @@ export default function JournalDetailPage() {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
-      setInitials(user.email?.slice(0, 2).toUpperCase() ?? 'MJ')
+      const meta = user.user_metadata ?? {}
+      setInitials(getInitials(meta.display_name ?? '', user.email ?? ''))
+      setAvatarBg(getAvatarBg(meta.avatar_color ?? 0))
 
       const j = await getJournal(id)
       if (!j || j.user_id !== user.id) { router.push('/dashboard'); return }
@@ -125,7 +129,7 @@ export default function JournalDetailPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
-      <TopNav initials={initials} />
+      <TopNav initials={initials} avatarBg={avatarBg} />
 
       {/* Delete confirmation overlay */}
       {showDeleteConfirm && (
@@ -169,7 +173,7 @@ export default function JournalDetailPage() {
         </div>
       )}
 
-      <main style={{ maxWidth: 820, margin: '0 auto', padding: '48px 24px 100px' }}>
+      <main className="page-main" style={{ maxWidth: 820, margin: '0 auto' }}>
         {/* Top bar: back + actions */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
           <button

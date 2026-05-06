@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { supabase, getJournals } from '@/lib/supabase'
 import type { Journal } from '@/lib/types'
 import { TopNav } from '@/components/TopNav'
+import { getAvatarBg, getInitials } from '@/lib/avatar'
 
 const moodColors: Record<string, string> = {
   '笃定': '#D4A574', '平静': '#8FB4D9', '温柔': '#E0A0B8',
@@ -39,6 +40,7 @@ export default function JournalsPage() {
   const [journals, setJournals] = useState<Journal[]>([])
   const [loading, setLoading] = useState(true)
   const [initials, setInitials] = useState('MJ')
+  const [avatarBg, setAvatarBg] = useState(getAvatarBg(0))
   const [search, setSearch] = useState('')
   const [moodFilter, setMoodFilter] = useState<string | null>(null)
 
@@ -46,7 +48,9 @@ export default function JournalsPage() {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
-      setInitials(user.email?.slice(0, 2).toUpperCase() ?? 'MJ')
+      const meta = user.user_metadata ?? {}
+      setInitials(getInitials(meta.display_name ?? '', user.email ?? ''))
+      setAvatarBg(getAvatarBg(meta.avatar_color ?? 0))
       const all = await getJournals(user.id)
       setJournals(all)
       setLoading(false)
@@ -89,25 +93,25 @@ export default function JournalsPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
-      <TopNav initials={initials} />
+      <TopNav initials={initials} avatarBg={avatarBg} />
 
-      <main style={{ maxWidth: 900, margin: '0 auto', padding: '48px 24px 100px' }}>
+      <main className="page-main" style={{ maxWidth: 900, margin: '0 auto' }}>
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 32, gap: 12 }}>
           <div>
             <div style={{ font: '400 12px/1 var(--font-ui)', color: 'var(--text-faint)', letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 10 }}>
               全部日记
             </div>
-            <h1 style={{ font: '400 34px/1.2 var(--font-serif)', color: 'var(--text)', margin: 0 }}>
+            <h1 style={{ font: '400 clamp(24px, 7vw, 34px)/1.2 var(--font-serif)', color: 'var(--text)', margin: 0 }}>
               我的日记
             </h1>
           </div>
           <Link href="/journal/new" style={{
-            padding: '12px 20px', borderRadius: 10, border: 'none', cursor: 'pointer',
+            padding: '12px 16px', borderRadius: 10, border: 'none', cursor: 'pointer',
             background: 'var(--gold)', color: '#1A1A1A',
             font: '600 13px/1 var(--font-ui)',
             display: 'inline-flex', alignItems: 'center', gap: 8,
-            textDecoration: 'none',
+            textDecoration: 'none', flexShrink: 0,
           }}>
             写今天的日记 <ArrowIcon />
           </Link>
@@ -115,7 +119,7 @@ export default function JournalsPage() {
 
         {/* Stats row */}
         {journals.length > 0 && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 36 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 28 }}>
             {[
               { label: '总篇数', value: `${journals.length} 篇` },
               { label: '总字数', value: `${totalWords.toLocaleString()} 字` },
@@ -123,12 +127,12 @@ export default function JournalsPage() {
             ].map(({ label, value }) => (
               <div key={label} style={{
                 background: 'var(--bg-card)', border: '1px solid var(--border)',
-                borderRadius: 12, padding: '18px 20px',
+                borderRadius: 12, padding: '14px 16px',
               }}>
-                <div style={{ font: '400 11px/1 var(--font-ui)', color: 'var(--text-faint)', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 10 }}>
+                <div style={{ font: '400 10px/1 var(--font-ui)', color: 'var(--text-faint)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>
                   {label}
                 </div>
-                <div style={{ font: '400 22px/1 var(--font-serif)', color: 'var(--text)' }}>
+                <div style={{ font: '400 clamp(16px, 4vw, 22px)/1 var(--font-serif)', color: 'var(--text)' }}>
                   {value}
                 </div>
               </div>
@@ -137,7 +141,7 @@ export default function JournalsPage() {
         )}
 
         {/* Search + filter */}
-        <div style={{ display: 'flex', gap: 12, marginBottom: 32, alignItems: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 28 }}>
           <div style={{
             flex: 1, display: 'flex', alignItems: 'center', gap: 10,
             background: 'var(--bg-card)', border: '1px solid var(--border)',
@@ -156,7 +160,7 @@ export default function JournalsPage() {
             />
           </div>
           {allMoods.length > 0 && (
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
               <button
                 onClick={() => setMoodFilter(null)}
                 style={{
@@ -213,10 +217,8 @@ export default function JournalsPage() {
                     const weekday = ['日', '一', '二', '三', '四', '五', '六'][d.getDay()]
                     const moodColor = j.mood_label ? (moodColors[j.mood_label] ?? 'var(--text-mute)') : null
                     return (
-                      <Link key={j.id} href={`/journal/${j.id}`} style={{
-                        background: 'var(--bg)', padding: '20px 24px',
-                        display: 'grid', gridTemplateColumns: '80px 1fr auto 20px',
-                        gap: 20, alignItems: 'center', textDecoration: 'none',
+                      <Link key={j.id} href={`/journal/${j.id}`} className="journal-row" style={{
+                        background: 'var(--bg)', padding: '18px 22px', textDecoration: 'none',
                       }}>
                         <div>
                           <div style={{ font: '500 14px/1.2 var(--font-ui)', color: 'var(--text)' }}>
@@ -226,21 +228,20 @@ export default function JournalsPage() {
                             周{weekday}
                           </div>
                         </div>
-                        <div>
+                        <div style={{ minWidth: 0 }}>
                           {j.title && (
-                            <div style={{ font: '400 15px/1.3 var(--font-serif)', color: 'var(--text)', marginBottom: 5 }}>
+                            <div style={{ font: '400 15px/1.3 var(--font-serif)', color: 'var(--text)', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {j.title}
                             </div>
                           )}
                           <div style={{
                             font: '400 13px/1.5 var(--font-ui)', color: 'var(--text-mute)',
-                            overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box',
-                            WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' as const,
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                           }}>
                             {j.content.slice(0, 80)}
                           </div>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div className="journal-row-meta" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 5 }}>
                           {moodColor && (
                             <span style={{ display: 'flex', alignItems: 'center', gap: 5, font: '500 12px/1 var(--font-ui)', color: moodColor }}>
                               <span style={{ width: 6, height: 6, borderRadius: '50%', background: moodColor }} />
@@ -251,7 +252,7 @@ export default function JournalsPage() {
                             {j.content.replace(/\s/g, '').length} 字
                           </span>
                         </div>
-                        <div style={{ color: 'var(--text-faint)' }}>
+                        <div className="journal-row-chevron" style={{ color: 'var(--text-faint)' }}>
                           <ChevIcon />
                         </div>
                       </Link>

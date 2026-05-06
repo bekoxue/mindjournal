@@ -8,15 +8,11 @@ const BookIcon = () => (
     <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20 M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
   </svg>
 )
-const SearchIcon = () => (
-  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" />
-  </svg>
-)
-const SettingsIcon = () => (
-  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="3" />
-    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09c0 .67.39 1.27 1 1.51a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.24.61.84 1 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+const LogOutIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+    <polyline points="16 17 21 12 16 7"/>
+    <line x1="21" y1="12" x2="9" y2="12"/>
   </svg>
 )
 
@@ -25,11 +21,17 @@ const navItems = [
   { id: 'journals', label: '我的日记', href: '/journals' },
 ]
 
-export function TopNav({ initials = 'MJ' }: { initials?: string }) {
+export function TopNav({
+  initials = 'MJ',
+  avatarBg = 'linear-gradient(135deg, #D4A574, #B8895A)',
+}: {
+  initials?: string
+  avatarBg?: string
+}) {
   const pathname = usePathname()
   const router = useRouter()
 
-  const active = navItems.find(item => pathname.startsWith(item.href))?.id ?? 'dashboard'
+  const active = navItems.find(item => pathname.startsWith(item.href))?.id ?? ''
 
   async function handleLogout() {
     await supabase.auth.signOut()
@@ -37,11 +39,10 @@ export function TopNav({ initials = 'MJ' }: { initials?: string }) {
   }
 
   return (
-    <header style={{
+    <header className="nav-header" style={{
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '20px 48px',
       borderBottom: '1px solid var(--border)',
       background: 'var(--bg)',
     }}>
@@ -55,7 +56,7 @@ export function TopNav({ initials = 'MJ' }: { initials?: string }) {
           }}>
             <BookIcon />
           </div>
-          <span style={{ font: '500 16px/1 var(--font-ui)', letterSpacing: 0.2, color: 'var(--text)' }}>
+          <span className="nav-brand-text" style={{ font: '500 16px/1 var(--font-ui)', letterSpacing: 0.2, color: 'var(--text)' }}>
             MindJournal
           </span>
         </Link>
@@ -74,26 +75,33 @@ export function TopNav({ initials = 'MJ' }: { initials?: string }) {
           ))}
         </nav>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button style={{ width: 34, height: 34, borderRadius: 8, border: 'none', cursor: 'pointer', background: 'transparent', color: 'var(--text-mute)', display: 'grid', placeItems: 'center' }}>
-          <SearchIcon />
-        </button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {/* Logout */}
         <button
           onClick={handleLogout}
           title="退出登录"
-          style={{ width: 34, height: 34, borderRadius: 8, border: 'none', cursor: 'pointer', background: 'transparent', color: 'var(--text-mute)', display: 'grid', placeItems: 'center' }}>
-          <SettingsIcon />
+          style={{
+            width: 34, height: 34, borderRadius: 8, border: 'none', cursor: 'pointer',
+            background: 'transparent', color: 'var(--text-faint)',
+            display: 'grid', placeItems: 'center',
+          }}>
+          <LogOutIcon />
         </button>
-        <div style={{
-          width: 32, height: 32, borderRadius: '50%',
-          background: 'linear-gradient(135deg, #3a3a3a, #1f1f1f)',
-          border: '1px solid var(--border-strong)',
-          display: 'grid', placeItems: 'center',
-          color: 'var(--gold)',
-          font: '500 12px/1 var(--font-ui)',
-        }}>
-          {initials}
-        </div>
+
+        {/* Avatar → settings */}
+        <Link href="/settings" title="账号设置" style={{ textDecoration: 'none' }}>
+          <div style={{
+            width: 34, height: 34, borderRadius: '50%',
+            background: avatarBg,
+            border: '1.5px solid var(--border-strong)',
+            display: 'grid', placeItems: 'center',
+            color: '#1A1A1A',
+            font: '600 12px/1 var(--font-ui)',
+            cursor: 'pointer',
+          }}>
+            {initials}
+          </div>
+        </Link>
       </div>
     </header>
   )
