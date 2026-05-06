@@ -87,6 +87,16 @@ body {
 
 /* ── Responsive layout helpers ───────────────────────────── */
 
+/* Landing page */
+.landing-header { padding: 24px 48px; }
+.landing-hero { padding: 80px 48px; }
+
+@media (max-width: 640px) {
+  .landing-header { padding: 16px 20px; }
+  .landing-hero { padding: 48px 20px; }
+}
+
+
 /* Nav header */
 .nav-header { padding: 20px 48px; }
 
