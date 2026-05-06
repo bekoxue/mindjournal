@@ -56,6 +56,31 @@ export async function updateJournalInsight(
   if (error) throw error
 }
 
+export async function updateJournal(
+  id: string,
+  content: string,
+  title?: string
+): Promise<Journal> {
+  const { data, error } = await supabase
+    .from('journals')
+    .update({ content, title: title || null, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function deleteJournal(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('journals')
+    .delete()
+    .eq('id', id)
+
+  if (error) throw error
+}
+
 export async function getTodayJournal(userId: string): Promise<Journal | null> {
   const today = new Date()
   const start = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString()
