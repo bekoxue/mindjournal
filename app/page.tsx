@@ -9,9 +9,8 @@ export default function HomePage() {
       flexDirection: 'column',
     }}>
       {/* Nav */}
-      <header style={{
+      <header className="landing-header" style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '24px 48px',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{
@@ -44,10 +43,9 @@ export default function HomePage() {
       </header>
 
       {/* Hero */}
-      <main style={{
+      <main className="landing-hero" style={{
         flex: 1, display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
-        padding: '80px 48px',
         textAlign: 'center',
       }}>
         <div style={{
@@ -67,7 +65,7 @@ export default function HomePage() {
         </div>
 
         <h1 style={{
-          font: '400 64px/1.15 var(--font-serif)',
+          font: '400 clamp(36px, 9vw, 64px)/1.15 var(--font-serif)',
           color: 'var(--text)', margin: '0 0 24px',
           letterSpacing: -0.5, maxWidth: 720,
         }}>
@@ -76,8 +74,8 @@ export default function HomePage() {
         </h1>
 
         <p style={{
-          font: '400 19px/1.7 var(--font-ui)',
-          color: 'var(--text-mute)', margin: '0 0 48px',
+          font: '400 clamp(15px, 4vw, 19px)/1.7 var(--font-ui)',
+          color: 'var(--text-mute)', margin: '0 0 40px',
           maxWidth: 520,
         }}>
           每一篇日记，AI 都会帮你看见文字背后的情绪模式、思维惯性和成长信号。
@@ -97,9 +95,6 @@ export default function HomePage() {
           </svg>
         </Link>
 
-        <p style={{ marginTop: 16, font: '400 13px/1 var(--font-ui)', color: 'var(--text-faint)' }}>
-          免费使用 · 无需信用卡
-        </p>
       </main>
     </div>
   )
