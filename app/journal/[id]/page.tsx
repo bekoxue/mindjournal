@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { supabase, getJournal } from '@/lib/supabase'
+import { supabase, getJournal, deleteJournal } from '@/lib/supabase'
 import type { Journal } from '@/lib/types'
 import { TopNav } from '@/components/TopNav'
 
@@ -21,6 +21,21 @@ function SparkIcon() {
     </svg>
   )
 }
+function EditIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 20h9 M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+    </svg>
+  )
+}
+function TrashIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14H6L5 6 M10 11v6 M14 11v6 M9 6V4h6v2" />
+    </svg>
+  )
+}
 
 const moodColors: Record<string, string> = {
   '笃定': '#D4A574', '平静': '#8FB4D9', '温柔': '#E0A0B8',
@@ -35,14 +50,12 @@ function parseInsight(text: string) {
   let body = ''
   let closing = ''
 
-  // Try to parse structured format from Claude
   const moodMatch = text.match(/情绪[：:]\s*(.+)/i)
   const themeMatch = text.match(/主题[：:]\s*(.+)/i)
 
   if (moodMatch) moodLine = moodMatch[1].trim()
   if (themeMatch) themes = themeMatch[1].split(/[,，、]/).map(s => s.trim()).filter(Boolean).slice(0, 3)
 
-  // Use lines as body/closing if structured parsing fails
   if (!moodLine) {
     body = lines.slice(0, -1).join('\n\n')
     closing = lines[lines.length - 1] ?? ''
@@ -62,6 +75,10 @@ export default function JournalDetailPage() {
   const [loading, setLoading] = useState(true)
   const [initials, setInitials] = useState('MJ')
   const [expanded, setExpanded] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  const id = params.id as string
 
   useEffect(() => {
     async function load() {
@@ -69,13 +86,25 @@ export default function JournalDetailPage() {
       if (!user) { router.push('/login'); return }
       setInitials(user.email?.slice(0, 2).toUpperCase() ?? 'MJ')
 
-      const j = await getJournal(params.id as string)
+      const j = await getJournal(id)
       if (!j || j.user_id !== user.id) { router.push('/dashboard'); return }
       setJournal(j)
       setLoading(false)
     }
     load()
-  }, [params.id, router])
+  }, [id, router])
+
+  async function handleDelete() {
+    if (!journal) return
+    setDeleting(true)
+    try {
+      await deleteJournal(journal.id)
+      router.push('/journals')
+    } catch {
+      setDeleting(false)
+      setShowDeleteConfirm(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -98,13 +127,77 @@ export default function JournalDetailPage() {
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       <TopNav initials={initials} />
 
+      {/* Delete confirmation overlay */}
+      {showDeleteConfirm && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 100,
+          display: 'grid', placeItems: 'center', backdropFilter: 'blur(4px)',
+        }}>
+          <div style={{
+            background: 'var(--bg-elev)', border: '1px solid var(--border-strong)',
+            borderRadius: 16, padding: '32px 36px', maxWidth: 380, width: '90%', textAlign: 'center',
+          }}>
+            <div style={{ font: '400 20px/1.3 var(--font-serif)', color: 'var(--text)', marginBottom: 12 }}>
+              确认删除这篇日记？
+            </div>
+            <p style={{ font: '400 13px/1.6 var(--font-ui)', color: 'var(--text-mute)', margin: '0 0 28px' }}>
+              删除后无法恢复，包括 AI 生成的洞察。
+            </p>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                style={{
+                  padding: '10px 22px', borderRadius: 8, border: '1px solid var(--border)',
+                  background: 'transparent', color: 'var(--text-mute)',
+                  font: '500 13px/1 var(--font-ui)', cursor: 'pointer',
+                }}>
+                取消
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                style={{
+                  padding: '10px 22px', borderRadius: 8, border: 'none',
+                  background: '#C0392B', color: '#fff',
+                  font: '500 13px/1 var(--font-ui)', cursor: deleting ? 'not-allowed' : 'pointer',
+                  opacity: deleting ? 0.6 : 1,
+                }}>
+                {deleting ? '删除中…' : '确认删除'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <main style={{ maxWidth: 820, margin: '0 auto', padding: '48px 24px 100px' }}>
-        {/* Breadcrumb */}
-        <button
-          onClick={() => router.back()}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-mute)', display: 'flex', alignItems: 'center', gap: 8, font: '400 13px/1 var(--font-ui)', padding: 0, marginBottom: 32 }}>
-          <BackIcon /> 返回
-        </button>
+        {/* Top bar: back + actions */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+          <button
+            onClick={() => router.back()}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-mute)', display: 'flex', alignItems: 'center', gap: 8, font: '400 13px/1 var(--font-ui)', padding: 0 }}>
+            <BackIcon /> 返回
+          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Link href={`/journal/new?edit=${id}`} style={{
+              padding: '8px 14px', borderRadius: 8, border: '1px solid var(--border)',
+              background: 'transparent', color: 'var(--text-mute)',
+              font: '400 12.5px/1 var(--font-ui)', textDecoration: 'none',
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+            }}>
+              <EditIcon /> 编辑
+            </Link>
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              style={{
+                padding: '8px 14px', borderRadius: 8, border: '1px solid rgba(192,57,43,0.3)',
+                background: 'transparent', color: '#C0392B',
+                font: '400 12.5px/1 var(--font-ui)', cursor: 'pointer',
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+              }}>
+              <TrashIcon /> 删除
+            </button>
+          </div>
+        </div>
 
         {/* Journal entry */}
         <article style={{
@@ -142,15 +235,11 @@ export default function JournalDetailPage() {
         {/* AI Insight */}
         {insight ? (
           <section style={{
-            position: 'relative',
-            padding: '44px 44px 40px',
-            borderRadius: 18,
+            position: 'relative', padding: '44px 44px 40px', borderRadius: 18,
             background: 'radial-gradient(ellipse at top, rgba(212,165,116,0.10), transparent 60%), var(--bg-elev)',
-            border: '1px solid var(--gold-dim)',
-            overflow: 'hidden',
+            border: '1px solid var(--gold-dim)', overflow: 'hidden',
             animation: 'reveal 700ms ease-out',
           }}>
-            {/* Top shimmer line */}
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg, transparent, var(--gold), transparent)', opacity: 0.6 }} />
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28 }}>
@@ -160,7 +249,6 @@ export default function JournalDetailPage() {
               </span>
             </div>
 
-            {/* Mood + themes */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 32 }}>
               <div>
                 <div style={{ font: '500 11px/1 var(--font-ui)', color: 'var(--text-faint)', letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 14 }}>
@@ -187,8 +275,7 @@ export default function JournalDetailPage() {
                     <span key={t} style={{
                       padding: '8px 14px', borderRadius: 6,
                       border: '1px solid var(--gold)', color: 'var(--gold)',
-                      font: '500 13px/1 var(--font-ui)',
-                      background: 'var(--gold-faint)',
+                      font: '500 13px/1 var(--font-ui)', background: 'var(--gold-faint)',
                     }}>{t}</span>
                   ))}
                 </div>
@@ -197,7 +284,6 @@ export default function JournalDetailPage() {
 
             <div style={{ height: 1, background: 'var(--border)', margin: '8px 0 28px' }} />
 
-            {/* Insight body */}
             <div style={{ font: '500 11px/1 var(--font-ui)', color: 'var(--text-faint)', letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 14 }}>
               洞察
             </div>
@@ -205,7 +291,6 @@ export default function JournalDetailPage() {
               {insight.body}
             </div>
 
-            {/* Closing */}
             {insight.closing && (
               <div style={{
                 marginTop: 28, padding: '18px 22px',
@@ -218,7 +303,6 @@ export default function JournalDetailPage() {
               </div>
             )}
 
-            {/* Actions */}
             <div style={{ marginTop: 28, paddingTop: 24, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Link href="/journal/new" style={{
                 padding: '8px 14px', borderRadius: 8, border: '1px solid var(--border)',
@@ -226,12 +310,12 @@ export default function JournalDetailPage() {
                 font: '400 12.5px/1 var(--font-ui)', textDecoration: 'none',
                 display: 'inline-flex', alignItems: 'center', gap: 6,
               }}>
-                继续写今天
+                写今天的日记
               </Link>
-              <Link href="/dashboard" style={{
+              <Link href="/journals" style={{
                 font: '400 12px/1 var(--font-ui)', color: 'var(--text-faint)', textDecoration: 'none',
               }}>
-                返回主页 →
+                查看所有日记 →
               </Link>
             </div>
           </section>
