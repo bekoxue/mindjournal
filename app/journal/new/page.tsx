@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { supabase, createJournal, updateJournal, updateJournalInsight, getTodayJournal, getJournal } from '@/lib/supabase'
+import { supabase, createJournal, updateJournal, updateJournalInsight, getJournal } from '@/lib/supabase'
 
 function BackIcon() {
   return (
@@ -57,13 +57,6 @@ function NewJournalPageInner() {
         setTitle(j.title ?? '')
         setContent(j.content)
         setLoading(false)
-      } else {
-        // New mode: load today's journal if exists
-        const today = await getTodayJournal(user.id)
-        if (today) {
-          setTitle(today.title ?? '')
-          setContent(today.content)
-        }
       }
     }
     load()
@@ -124,16 +117,16 @@ function NewJournalPageInner() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#161616', position: 'relative' }}>
-      <header style={{
+      <header className="nav-header" style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '18px 32px', borderBottom: '1px solid var(--border)',
+        borderBottom: '1px solid var(--border)',
       }}>
         <button
           onClick={() => router.back()}
           style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-mute)', display: 'flex', alignItems: 'center', gap: 8, font: '400 13px/1 var(--font-ui)' }}>
           <BackIcon /> {isEditMode ? '取消' : '返回'}
         </button>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, font: '400 12.5px/1 var(--font-ui)', color: 'var(--text-faint)' }}>
+        <div className="editor-header-info" style={{ display: 'flex', alignItems: 'center', gap: 12, font: '400 12.5px/1 var(--font-ui)', color: 'var(--text-faint)' }}>
           <span>{isEditMode ? '编辑日记' : dateStr}</span>
           {!isEditMode && (
             <>
@@ -155,11 +148,12 @@ function NewJournalPageInner() {
             display: 'flex', alignItems: 'center', gap: 8,
           }}>
           <SparkIcon />
-          {saving ? (isEditMode ? '保存中…' : '生成洞察中…') : (isEditMode ? '保存修改' : '保存并获取洞察')}
+          <span className="nav-brand-text">{saving ? (isEditMode ? '保存中…' : '生成洞察中…') : (isEditMode ? '保存修改' : '保存并获取洞察')}</span>
+          <span style={{ display: 'none' }} className="mobile-save-label">{saving ? '保存…' : '保存'}</span>
         </button>
       </header>
 
-      <main style={{ maxWidth: 720, margin: '0 auto', padding: '72px 24px 160px' }}>
+      <main className="editor-main" style={{ maxWidth: 720 }}>
         <div style={{ marginBottom: 28 }}>
           <div style={{ font: '400 12px/1 var(--font-ui)', color: 'var(--text-faint)', letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 14 }}>
             {isEditMode ? '标题' : '今日'}
@@ -168,10 +162,11 @@ function NewJournalPageInner() {
             type="text"
             value={title}
             onChange={e => setTitle(e.target.value)}
-            placeholder={isEditMode ? '给这篇日记一个标题（可留空）' : '给今天一个标题（可留空，AI 将替你拟一个）'}
+            placeholder={isEditMode ? '给这篇日记一个标题（可留空）' : '给今天一个标题（可留空）'}
+            className="editor-title-input"
             style={{
               width: '100%', background: 'none', border: 'none', outline: 'none',
-              font: '400 36px/1.3 var(--font-serif)', color: 'var(--text)', padding: 0,
+              font: '400 clamp(24px, 7vw, 36px)/1.3 var(--font-serif)', color: 'var(--text)', padding: 0,
             }}
           />
         </div>

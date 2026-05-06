@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { supabase, getJournals, getTodayJournal } from '@/lib/supabase'
 import type { Journal, User } from '@/lib/types'
 import { TopNav } from '@/components/TopNav'
+import { getAvatarBg, getInitials } from '@/lib/avatar'
 
 const moodColors: Record<string, string> = {
   '笃定': '#D4A574', '平静': '#8FB4D9', '温柔': '#E0A0B8',
@@ -62,12 +63,17 @@ export default function DashboardPage() {
   const [journals, setJournals] = useState<Journal[]>([])
   const [todayDone, setTodayDone] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [avatarBg, setAvatarBg] = useState(getAvatarBg(0))
+  const [displayName, setDisplayName] = useState('')
 
   useEffect(() => {
     async function load() {
       const { data: { user: u } } = await supabase.auth.getUser()
       if (!u) { router.push('/login'); return }
       setUser({ id: u.id, email: u.email! })
+      const meta = u.user_metadata ?? {}
+      setDisplayName(meta.display_name ?? '')
+      setAvatarBg(getAvatarBg(meta.avatar_color ?? 0))
 
       const [all, today] = await Promise.all([
         getJournals(u.id),
@@ -97,8 +103,7 @@ export default function DashboardPage() {
   const hour = now.getHours()
   const greeting = hour < 6 ? '深夜好' : hour < 12 ? '早上好' : hour < 18 ? '下午好' : '晚上好'
 
-  // initials from email
-  const initials = user?.email?.slice(0, 2).toUpperCase() ?? 'MJ'
+  const initials = getInitials(displayName, user?.email ?? '')
 
   if (loading) {
     return (
@@ -110,28 +115,27 @@ export default function DashboardPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
-      <TopNav initials={initials} />
+      <TopNav initials={initials} avatarBg={avatarBg} />
 
-      <main style={{ padding: '56px 48px 80px', maxWidth: 1100, margin: '0 auto' }}>
+      <main className="page-main" style={{ maxWidth: 1100, margin: '0 auto' }}>
         {/* Greeting */}
         <div style={{ marginBottom: 40 }}>
           <div style={{ font: '400 13px/1 var(--font-ui)', color: 'var(--text-faint)', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 12 }}>
             {weekday} · {dateStr}
           </div>
-          <h1 style={{ font: '400 40px/1.2 var(--font-serif)', color: 'var(--text)', margin: 0, letterSpacing: -0.3 }}>
+          <h1 style={{ font: '400 clamp(28px, 8vw, 40px)/1.2 var(--font-serif)', color: 'var(--text)', margin: 0, letterSpacing: -0.3 }}>
             {greeting}，<span style={{ color: 'var(--gold)' }}>{user?.email?.split('@')[0]}</span>。<br />
             今天，你想从哪里开始？
           </h1>
         </div>
 
         {/* Today CTA */}
-        <section style={{
+        <section className="today-cta" style={{
           background: 'linear-gradient(180deg, var(--bg-elev) 0%, var(--bg-card) 100%)',
           border: '1px solid var(--border-strong)',
           borderRadius: 16,
-          padding: '32px 36px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          gap: 24, marginBottom: 56,
+          padding: '28px 28px',
+          marginBottom: 40,
           position: 'relative', overflow: 'hidden',
         }}>
           <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'linear-gradient(180deg, var(--gold), transparent)' }} />
@@ -153,20 +157,21 @@ export default function DashboardPage() {
               不需要长，甚至不需要完整。一句话，也是一篇日记。
             </p>
           </div>
-          <Link href="/journal/new" style={{
+          <Link href="/journal/new" className="today-cta-btn" style={{
             padding: '14px 22px', borderRadius: 10, border: 'none', cursor: 'pointer',
             background: 'var(--gold)', color: '#1A1A1A',
             font: '600 14px/1 var(--font-ui)',
             display: 'flex', alignItems: 'center', gap: 10,
             textDecoration: 'none',
             boxShadow: '0 8px 24px rgba(212,165,116,0.25)',
+            flexShrink: 0,
           }}>
             {todayDone ? '继续写今天' : '写今天的日记'} <ArrowIcon />
           </Link>
         </section>
 
         {/* Two-column: AI summary + week strip */}
-        <section style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 24, marginBottom: 56 }}>
+        <section className="grid-two-col" style={{ marginBottom: 40 }}>
           {/* AI observation */}
           <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '24px 26px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
@@ -251,13 +256,9 @@ export default function DashboardPage() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 1, background: 'var(--border)', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border)' }}>
               {journals.map((j) => (
-                <Link key={j.id} href={`/journal/${j.id}`} style={{
+                <Link key={j.id} href={`/journal/${j.id}`} className="journal-row" style={{
                   background: 'var(--bg)',
-                  padding: '22px 26px',
-                  display: 'grid',
-                  gridTemplateColumns: '90px 1fr 120px 28px',
-                  gap: 24,
-                  alignItems: 'center',
+                  padding: '18px 26px',
                   textDecoration: 'none',
                 }}>
                   <div>
@@ -268,19 +269,18 @@ export default function DashboardPage() {
                       {['周日', '周一', '周二', '周三', '周四', '周五', '周六'][new Date(j.created_at).getDay()]}
                     </div>
                   </div>
-                  <div>
+                  <div style={{ minWidth: 0 }}>
                     {j.title && (
-                      <h4 style={{ font: '400 16px/1.3 var(--font-serif)', color: 'var(--text)', margin: '0 0 6px' }}>{j.title}</h4>
+                      <h4 style={{ font: '400 15px/1.3 var(--font-serif)', color: 'var(--text)', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{j.title}</h4>
                     )}
                     <p style={{
-                      font: '400 13.5px/1.55 var(--font-ui)', color: 'var(--text-mute)', margin: 0,
-                      overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box',
-                      WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' as const,
+                      font: '400 13px/1.5 var(--font-ui)', color: 'var(--text-mute)', margin: 0,
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     }}>
-                      {j.content.slice(0, 80)}…
+                      {j.content.slice(0, 80)}
                     </p>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}>
+                  <div className="journal-row-meta">
                     {j.mood_label && (
                       <span style={{
                         display: 'inline-flex', alignItems: 'center', gap: 6,
@@ -295,7 +295,7 @@ export default function DashboardPage() {
                       {j.content.replace(/\s/g, '').length} 字
                     </span>
                   </div>
-                  <div style={{ color: 'var(--text-faint)', justifySelf: 'end' }}>
+                  <div className="journal-row-chevron" style={{ color: 'var(--text-faint)' }}>
                     <ChevIcon />
                   </div>
                 </Link>
